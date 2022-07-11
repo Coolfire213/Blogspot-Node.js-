@@ -1,4 +1,5 @@
 const fs = require("fs");
+const { resolve } = require("path");
 
 let posts = [];
 let categories = [];
@@ -61,3 +62,40 @@ module.exports.addPost = function (postData) {
     });
   });
 };
+
+module.exports.getPostsByCategory = function (category) {
+  return new Promise((resolve,reject) => {
+    if(posts.length > 0)  {
+    posts.id == category ? resolve(posts) : reject("no results found");
+    }
+  });
+}
+
+module.exports.getPostsByMinDate = function (minDateStr) {
+  return new Promise((resolve,reject) =>{
+    if (new Date(minDateStr) >= new Date(posts.postDate)) {
+      resolve(posts);
+    } else {
+      reject("no results found");
+    }
+  });
+}
+
+module.exports.getPostById = function (id) {
+  return new Promise((resolve,reject) => {
+    if (posts.id == id) {
+      resolve(posts)
+    } else {
+      reject("no results found")
+    }
+  });
+}
+
+module.exports.getPublishedPostsByCategory = function(category) {
+  return new Promise((resolve,reject) => {
+    if (posts.published == true && posts.category == category)
+      resolve(posts)
+    else
+      reject("no resluts found")
+  })
+}

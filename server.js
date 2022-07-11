@@ -1,12 +1,12 @@
 /********************************************************************** 
-*  WEB322 – Assignment 3 
+*  WEB322 – Assignment 4
 *  I declare that this assignment is my own work in accordance with Seneca Academic Policy.   
 *  No part of this assignment has been copied manually or electronically from any other source 
 *  (including web sites) or distributed to other students. 
 *  
 *  Name: Aaron Maniyakku   Student ID:152752192  Date: 17/06/2022
 * 
-*  Online (Heroku) URL: https://whispering-dawn-82178.herokuapp.com/
+*  Online (Heroku) URL: https://whispering-oasis-51894.herokuapp.com/
 
  
 ********************************************************************************/
@@ -19,8 +19,38 @@ const app = express();
 const multer = require("multer");
 const cloudinary = require('cloudinary').v2
 const streamifier = require('streamifier');
+const exphbs = require('express-handlebars');
+const stripJs = require('strip-js')
 
 const HTTP_PORT = process.env.PORT || 8080;
+
+app.engine('.hbs', exphbs.engine({
+    extname: '.hbs',
+    helpers: {
+        navLink: function(url, options){
+            return '<li' + 
+            ((url == app.locals.activeRoute) ? ' class="active" ' : '') + 
+            '><a href="' + url + '">' + options.fn(this) + '</a></li>';
+        },
+
+        equal: function (lvalue, rvalue, options) {
+            if (arguments.length < 3)
+            throw new Error("Handlebars Helper equal needs 2 parameters");
+            if (lvalue != rvalue) {
+            return options.inverse(this);
+            } else {
+            return options.fn(this);
+            }
+        },
+
+        safeHTML: function(context){
+            return stripJs(context);
+        }
+               
+    }
+}));
+
+app.set('view engine', '.hbs');
 
 app.use(express.static('public'));
 // Parse URL-encoded bodies (as sent by HTML forms)
@@ -38,38 +68,119 @@ cloudinary.config({
     secure: true
 });
 
+app.use(function(req,res,next){
+    let route = req.path.substring(1);
+    app.locals.activeRoute = "/" + (isNaN(route.split('/')[1]) ? route.replace(/\/(?!.*)/, "") : route.replace(/\/(.*)/, ""));
+    app.locals.viewingCategory = req.query.category;
+    next();
+});
+
+
+
 //Routes 
 app.get('/', (req, res) => {
     res.redirect("/about");
 });
 
 app.get('/about', (req, res) => {
-    res.sendFile(path.join(__dirname, "/views/about.html"))
+    res.render('about.hbs', {
+        layout: 'main.hbs'
+    })
 });
 
-app.get('/blog', (req, res) => {
-    blogData.getPublishedPosts().then((data => {
-        res.json(data);
-    })).catch(err => {
-        res.json({ message: err });
-    });
+app.get('/blog', async (req, res) => {
+     // Declare an object to store properties for the view
+     let viewData = {};
+
+     try{
+ 
+         // declare empty array to hold "post" objects
+         let posts = [];
+ 
+         // if there's a "category" query, filter the returned posts by category
+         if(req.query.category){
+             // Obtain the published "posts" by category
+             posts = await blogData.getPublishedPostsByCategory(req.query.category);
+         }else{
+             // Obtain the published "posts"
+             posts = await blogData.getPublishedPosts();
+         }
+ 
+         // sort the published posts by postDate
+         posts.sort((a,b) => new Date(b.postDate) - new Date(a.postDate));
+ 
+         // get the latest post from the front of the list (element 0)
+         let post = posts[0]; 
+ 
+         // store the "posts" and "post" data in the viewData object (to be passed to the view)
+         viewData.posts = posts;
+         viewData.post = post;
+ 
+     }catch(err){
+         viewData.message = "no results";
+     }
+ 
+     try{
+         // Obtain the full list of "categories"
+         let categories = await blogData.getCategories();
+ 
+         // store the "categories" data in the viewData object (to be passed to the view)
+         viewData.categories = categories;
+     }catch(err){
+         viewData.categoriesMessage = "no results"
+     }
+ 
+     // render the "blog" view with all of the data (viewData)
+     res.render("blog", {data: viewData})
+ 
 });
 
 app.get('/posts', (req, res) => {
     blogData.getAllPosts().then((data => {
-        res.json(data);
+        res.render("posts",{posts: data});
     })).catch(err => {
-        res.json({ message: err });
+        res.render("posts", {message: "no results"});
     });
 });
 
 app.get('/categories', (req, res) => {
     blogData.getCategories().then((data => {
-        res.json(data);
+        res.render("categories", {categories: data});
     })).catch(err => {
-        res.json({ message: err });
+        res.render("categories", {message: "no results"});
     });
 });
+
+app.get('/posts/add', (req, res) => {
+    res.render('addPost.hbs',{
+        layout: 'main.hbs'
+    })
+})
+
+app.get('/posts', function(req, res) {
+    blogData.getPostsByCategory(req.query.category).then((data => {
+        res.render("posts",{posts: data});
+    })).catch(err => {
+        res.render("posts", {message: "no results"});
+    });
+})
+
+app.get('/posts', function(req, res) {
+    blogData.getPostsByMinDate(req.query.minDateStr).then((data => {
+        res.render("posts",{posts: data});
+    })).catch(err => {
+        res.render("posts", {message: "no results"});
+    });
+})
+
+app.get('/post/:id', function(res,req) {
+    blogData.getPostById(req.params.id).then((data => {
+        res.render("posts",{posts: data});
+    })).catch(err => {
+        res.render("posts", {message: "no results"});
+    });
+})
+
 
 //POST
 app.post('/posts/add', upload.single("featureImage"), function (req, res,next) {
@@ -103,9 +214,7 @@ app.post('/posts/add', upload.single("featureImage"), function (req, res,next) {
     }))
 });
 
-app.get('/posts/add', (req, res) => {
-    res.sendFile(path.join(__dirname, '/views/addPost.html'))
-})
+
 
 //Error handling
 app.use((req, res) => {
