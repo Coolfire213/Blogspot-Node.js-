@@ -4,7 +4,7 @@
 *  No part of this assignment has been copied manually or electronically from any other source 
 *  (including web sites) or distributed to other students. 
 *  
-*  Name: Aaron Maniyakku   Student ID:152752192  Date: 17/06/2022
+*  Name: Aaron Maniyakku   Student ID:152752192  Date: 22/07/2022
 * 
 *  Online (Heroku) URL: https://serene-taiga-72565.herokuapp.com/
 
@@ -31,7 +31,7 @@ app.engine('.hbs', exphbs.engine({
         navLink: function(url, options){
             return '<li' + 
             ((url == app.locals.activeRoute) ? ' class="active" ' : '') + 
-            '><a href="' + url + '">' + options.fn(this) + '</a></li>';
+            '<li><a href="' + url + '">' + options.fn(this) + '</a></li>';
         },
 
         equal: function (lvalue, rvalue, options) {
