@@ -31,7 +31,7 @@ app.engine('.hbs', exphbs.engine({
         navLink: function(url, options){
             return '<li' + 
             ((url == app.locals.activeRoute) ? ' class="active" ' : '') + 
-            '<li><a href="' + url + '">' + options.fn(this) + '</a></li>';
+            '><a href="' + url + '">' + options.fn(this) + '</a></li>';
         },
 
         equal: function (lvalue, rvalue, options) {
