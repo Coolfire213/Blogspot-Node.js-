@@ -1,12 +1,12 @@
 /********************************************************************** 
-*  WEB322 – Assignment 4
+*  WEB322 – Assignment 5
 *  I declare that this assignment is my own work in accordance with Seneca Academic Policy.   
 *  No part of this assignment has been copied manually or electronically from any other source 
 *  (including web sites) or distributed to other students. 
 *  
 *  Name: Aaron Maniyakku   Student ID:152752192  Date: 17/06/2022
 * 
-*  Online (Heroku) URL: https://whispering-oasis-51894.herokuapp.com/
+*  Online (Heroku) URL: https://serene-taiga-72565.herokuapp.com/
 
  
 ********************************************************************************/
@@ -21,6 +21,7 @@ const cloudinary = require('cloudinary').v2
 const streamifier = require('streamifier');
 const exphbs = require('express-handlebars');
 const stripJs = require('strip-js')
+
 
 const HTTP_PORT = process.env.PORT || 8080;
 
@@ -45,6 +46,13 @@ app.engine('.hbs', exphbs.engine({
 
         safeHTML: function(context){
             return stripJs(context);
+        },
+
+        formatDate: function(dateObj){
+            let year = dateObj.getFullYear();
+            let month = (dateObj.getMonth() + 1).toString();
+            let day = dateObj.getDate().toString();
+            return `${year}-${month.padStart(2, '0')}-${day.padStart(2,'0')}`;
         }
                
     }
@@ -54,7 +62,7 @@ app.set('view engine', '.hbs');
 
 app.use(express.static('public'));
 // Parse URL-encoded bodies (as sent by HTML forms)
-app.use(express.urlencoded());
+app.use(express.urlencoded({extended: true}));
 
 // Parse JSON bodies (as sent by API clients)
 app.use(express.json());
@@ -137,7 +145,10 @@ app.get('/blog', async (req, res) => {
 
 app.get('/posts', (req, res) => {
     blogData.getAllPosts().then((data => {
-        res.render("posts",{posts: data});
+        if(data.length > 0)
+            res.render("posts",{posts: data});
+        else
+            res.render("posts", {message: "no results"});  
     })).catch(err => {
         res.render("posts", {message: "no results"});
     });
@@ -145,16 +156,27 @@ app.get('/posts', (req, res) => {
 
 app.get('/categories', (req, res) => {
     blogData.getCategories().then((data => {
-        res.render("categories", {categories: data});
+        if(data.length > 0)
+            res.render("categories",{categories: data});
+        else
+            res.render("categories", {message: "no results"}); 
     })).catch(err => {
         res.render("categories", {message: "no results"});
     });
 });
 
 app.get('/posts/add', (req, res) => {
-    res.render('addPost.hbs',{
-        layout: 'main.hbs'
-    })
+    blogData.getCategories().then((data => {
+        res.render('addPost.hbs',{
+            categories: data,
+            layout: 'main.hbs'
+        })
+    })).catch((err => {
+        res.render('addPost.hbs',{
+            categories: [],
+            layout: 'main.hbs'
+        })
+    }))
 })
 
 app.get('/posts', function(req, res) {
@@ -181,9 +203,30 @@ app.get('/post/:id', function(res,req) {
     });
 })
 
+app.get('/categories/add', (req, res) => {
+    res.render('addCategory.hbs',{
+        layout: 'main.hbs'
+    })
+})
+
+app.get('/categories/delete/:id', function(res,req) {
+    blogData.deleteCategoryById(req.params.id).then((data => {
+        res.redirect('/categories')
+    })).catch(err => {
+        res.status(500).send("Unable to remove Category/Category not found")
+    });
+})
+
+app.get('/posts/delete/:id', function(res,req) {
+    blogData.deletePostById(req.params.id).then((data => {
+        res.redirect('/posts')
+    })).catch(err => {
+        res.status(500).send("Unable to remove Post/Post not found")
+    });
+})
 
 //POST
-app.post('/posts/add', upload.single("featureImage"), function (req, res,next) {
+app.post('/posts/add', upload.single("featureImage"), function (req, res, next) {
     let streamUpload = (req) => {
         return new Promise((resolve, reject) => {
             let stream = cloudinary.uploader.upload_stream(
@@ -210,10 +253,17 @@ app.post('/posts/add', upload.single("featureImage"), function (req, res,next) {
     })
 
     blogData.addPost(req.body).then((data => {
-        res.sendFile(path.join(__dirname, '/data/posts.json'))
+        res.redirect('/posts')
     }))
 });
 
+app.post('/categories/add', function (req, res, next) {
+    blogData.addCategory(req.body).then((data => {
+        res.redirect('/categories')
+    })).catch(err => {
+        res.status(500).send("Unable to add Category")
+    })
+})
 
 
 //Error handling
