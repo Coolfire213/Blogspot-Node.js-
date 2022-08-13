@@ -1,0 +1,19 @@
+<div class="row">
+    <div class="col-md-12">
+          <h2>{{session.user.userName}} {{session.user.email}} History</h2>
+          <hr />
+
+          <div class="table-responsive">
+        <table class="table ">
+            <thead>
+            <tr>
+                <th>Login Date/time</th>
+                <th>Client Information</th>
+            </tr>
+            </thead>
+            <tbody>
+                <td>{{session.user.loginHistory.dateTime}}</td>
+                <td>{{session.user.loginHistory.userAgent}}</td>
+            </tbody>
+           
+</div>
