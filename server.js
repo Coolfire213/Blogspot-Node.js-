@@ -1,17 +1,3 @@
-/********************************************************************** 
-*  WEB322 – Assignment 6
-*  I declare that this assignment is my own work in accordance with Seneca Academic Policy.   
-*  No part of this assignment has been copied manually or electronically from any other source 
-*  (including web sites) or distributed to other students. 
-*  
-*  Name: Aaron Maniyakku   Student ID:152752192  Date: 12/08/2022
-* 
-*  Online (Heroku) URL: https://serene-taiga-72565.herokuapp.com/
-
- 
-********************************************************************************/
-
-
 const express = require('express');
 const blogData = require("./blog-service");
 const multer = require("multer");
